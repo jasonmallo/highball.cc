@@ -1,259 +1,109 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin Panel</title>
+<title>Admin - CCMARKET</title>
 
 <style>
-body{
-margin:0;
-font-family:system-ui;
-background:#0a0214;
-color:white;
+body {
+    margin:0;
+    font-family:Arial;
+    background:#0b0b10;
+    color:white;
+    padding:20px;
 }
 
-header{
-padding:14px;
-background:#1b0730;
-font-weight:700;
+.box {
+    max-width:400px;
+    margin:auto;
+    background:#141420;
+    padding:20px;
+    border-radius:14px;
 }
 
-section{
-padding:20px;
+input, textarea {
+    width:100%;
+    padding:10px;
+    margin:8px 0;
+    background:#111;
+    border:1px solid #333;
+    color:white;
+    border-radius:10px;
 }
 
-.box{
-background:#140a25;
-padding:12px;
-margin:10px 0;
-border-radius:12px;
+button {
+    background:#6a0dad;
+    color:white;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
 }
 
-input, textarea{
-width:100%;
-padding:10px;
-margin:6px 0;
-border-radius:10px;
-border:1px solid #333;
-background:#140a25;
-color:white;
-}
-
-button{
-padding:8px 10px;
-border:0;
-border-radius:8px;
-cursor:pointer;
-font-weight:700;
-margin-top:5px;
-}
-
-.add{background:#8b5cf6;color:white}
-.del{background:#ef4444;color:white}
+.hidden { display:none; }
 </style>
 </head>
 
 <body>
 
-<header>ADMIN PANEL</header>
+<div class="box" id="loginBox">
+    <h2>Admin Login</h2>
+    <input id="pass" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
 
-<!-- USERS -->
-<section>
-<h2>Users</h2>
-<div id="users"></div>
-</section>
+<div class="box hidden" id="panel">
+    <h2>Admin Panel</h2>
 
-<!-- DEPOSITS -->
-<section>
-<h2>Deposits</h2>
-<div id="deps"></div>
-</section>
+    <input id="title" placeholder="Title">
+    <textarea id="desc" placeholder="Description"></textarea>
+    <input id="price" placeholder="Price">
 
-<!-- LISTINGS -->
-<section>
-<h2>Add Listing (Image Upload)</h2>
+    <button onclick="add()">Post Listing</button>
+</div>
 
-<input id="iname" placeholder="Item name">
-<input id="iprice" placeholder="Price">
+<script type="module">
 
-<input type="file" id="iimg">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+getFirestore,
+collection,
+addDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-<button class="add" onclick="addItem()">Add Item</button>
+const firebaseConfig = {
+  apiKey: "AIzaSyATUoBzhoyuzW4G71OB6fIwzBT1peZsFJA",
+  authDomain: "ccmarket-33f11.firebaseapp.com",
+  projectId: "ccmarket-33f11",
+  storageBucket: "ccmarket-33f11.firebasestorage.app",
+  messagingSenderId: "933329101447",
+  appId: "1:933329101447:web:4c8616745a5aba3baa4e22"
+};
 
-<h3>Current Items</h3>
-<div id="items"></div>
-</section>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-<script>
+/* SIMPLE PASSWORD */
+window.login = ()=>{
+    const pass = document.getElementById("pass").value;
 
-/* STORAGE */
-function getDB(){
-return JSON.parse(localStorage.getItem("db") || "{}");
-}
+    if(pass === "admin123"){
+        loginBox.classList.add("hidden");
+        panel.classList.remove("hidden");
+    } else {
+        alert("Wrong password");
+    }
+};
 
-function getDeposits(){
-return JSON.parse(localStorage.getItem("deposits") || "[]");
-}
+window.add = async ()=>{
+    await addDoc(collection(db,"listings"),{
+        title:title.value,
+        desc:desc.value,
+        price:price.value,
+        image:"https://via.placeholder.com/300"
+    });
 
-function getItems(){
-return JSON.parse(localStorage.getItem("items") || "[]");
-}
-
-/* USERS */
-function loadUsers(){
-let db = getDB();
-let box = document.getElementById("users");
-box.innerHTML = "";
-
-for(let u in db){
-box.innerHTML += `
-<div class="box">
-<b>${u}</b><br>
-Email: ${db[u].email || "N/A"}<br>
-Balance: $${db[u].balance || 0}
-</div>`;
-}
-}
-
-/* DEPOSITS */
-function loadDeposits(){
-let deposits = getDeposits();
-let box = document.getElementById("deps");
-box.innerHTML = "";
-
-if(deposits.length === 0){
-box.innerHTML = "<p>No deposits</p>";
-return;
-}
-
-deposits.forEach((d,i)=>{
-box.innerHTML += `
-<div class="box">
-User: ${d.user}<br>
-Amount: $${d.amount}<br>
-Method: ${d.method}<br>
-${d.note ? "<b>"+d.note+"</b><br>" : ""}
-Status: ${d.status}<br><br>
-
-<button onclick="approve(${i})" style="background:green;color:white">Accept</button>
-<button onclick="deny(${i})" style="background:red;color:white">Deny</button>
-</div>`;
-});
-}
-
-/* APPROVE / DENY */
-function approve(i){
-let db = getDB();
-let deposits = getDeposits();
-
-let d = deposits[i];
-
-if(!db[d.user]) db[d.user] = {balance:0};
-
-db[d.user].balance += Number(d.amount);
-
-deposits.splice(i,1);
-
-localStorage.setItem("db",JSON.stringify(db));
-localStorage.setItem("deposits",JSON.stringify(deposits));
-
-loadUsers();
-loadDeposits();
-}
-
-function deny(i){
-let deposits = getDeposits();
-
-deposits.splice(i,1);
-
-localStorage.setItem("deposits",JSON.stringify(deposits));
-
-loadDeposits();
-}
-
-/* IMAGE → BASE64 */
-function toBase64(file){
-return new Promise((res)=>{
-let reader = new FileReader();
-reader.onload = () => res(reader.result);
-reader.readAsDataURL(file);
-});
-}
-
-/* ADD ITEM WITH IMAGE */
-async function addItem(){
-
-let name = document.getElementById("iname").value;
-let price = document.getElementById("iprice").value;
-let file = document.getElementById("iimg").files[0];
-
-if(!name || !price){
-alert("Fill name + price");
-return;
-}
-
-let items = getItems();
-let img = "";
-
-if(file){
-img = await toBase64(file);
-}
-
-items.push({
-name,
-price,
-image: img
-});
-
-localStorage.setItem("items",JSON.stringify(items));
-
-document.getElementById("iname").value="";
-document.getElementById("iprice").value="";
-document.getElementById("iimg").value="";
-
-loadItems();
-}
-
-/* RENDER ITEMS */
-function loadItems(){
-let items = getItems();
-let box = document.getElementById("items");
-box.innerHTML = "";
-
-if(items.length === 0){
-box.innerHTML = "<p>No items</p>";
-return;
-}
-
-items.forEach((x,i)=>{
-box.innerHTML += `
-<div class="box">
-<img src="${x.image}" style="width:100%;border-radius:10px"><br>
-<b>${x.name}</b> - $${x.price}<br>
-
-<button class="del" onclick="deleteItem(${i})">Delete</button>
-</div>`;
-});
-}
-
-/* DELETE ITEM */
-function deleteItem(i){
-let items = getItems();
-items.splice(i,1);
-localStorage.setItem("items",JSON.stringify(items));
-loadItems();
-}
-
-/* INIT */
-loadUsers();
-loadDeposits();
-loadItems();
-
-setInterval(()=>{
-loadDeposits();
-loadUsers();
-},2000);
+    alert("Posted!");
+};
 
 </script>
 
