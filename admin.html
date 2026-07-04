@@ -30,15 +30,27 @@ margin:10px 0;
 border-radius:12px;
 }
 
-button{
-border:0;
-padding:6px 10px;
-border-radius:6px;
-cursor:pointer;
-font-weight:700;
-margin-right:5px;
+input{
+width:100%;
+padding:10px;
+margin:6px 0;
+border-radius:10px;
+border:1px solid #333;
+background:#140a25;
+color:white;
 }
 
+button{
+padding:8px 10px;
+border:0;
+border-radius:8px;
+cursor:pointer;
+font-weight:700;
+margin-top:5px;
+}
+
+.add{background:#8b5cf6;color:white}
+.del{background:#ef4444;color:white}
 .accept{background:#22c55e;color:white}
 .deny{background:#ef4444;color:white}
 </style>
@@ -60,6 +72,19 @@ margin-right:5px;
 <div id="deps"></div>
 </section>
 
+<!-- LISTINGS -->
+<section>
+<h2>Shop Listings</h2>
+
+<input id="iname" placeholder="Item name">
+<input id="iprice" placeholder="Price">
+<input id="iimg" placeholder="Image URL">
+
+<button class="add" onclick="addItem()">Add Item</button>
+
+<div id="items"></div>
+</section>
+
 <script>
 
 /* STORAGE */
@@ -69,6 +94,10 @@ return JSON.parse(localStorage.getItem("db") || "{}");
 
 function getDeposits(){
 return JSON.parse(localStorage.getItem("deposits") || "[]");
+}
+
+function getItems(){
+return JSON.parse(localStorage.getItem("items") || "[]");
 }
 
 /* USERS */
@@ -89,13 +118,12 @@ Balance: $${db[u].balance || 0}
 
 /* DEPOSITS */
 function loadDeposits(){
-
 let deposits = getDeposits();
 let box = document.getElementById("deps");
 box.innerHTML = "";
 
 if(deposits.length === 0){
-box.innerHTML = "<p>No deposits yet</p>";
+box.innerHTML = "<p>No deposits</p>";
 return;
 }
 
@@ -110,58 +138,3 @@ ${d.note ? "<b>"+d.note+"</b><br>" : ""}
 Status: ${d.status}<br><br>
 
 <button class="accept" onclick="approve(${i})">Accept</button>
-<button class="deny" onclick="deny(${i})">Deny</button>
-</div>`;
-});
-}
-
-/* ACCEPT */
-function approve(i){
-
-let db = getDB();
-let deposits = getDeposits();
-
-let d = deposits[i];
-
-if(!db[d.user]){
-db[d.user] = {balance:0};
-}
-
-db[d.user].balance += Number(d.amount);
-
-/* remove deposit */
-deposits.splice(i,1);
-
-localStorage.setItem("db", JSON.stringify(db));
-localStorage.setItem("deposits", JSON.stringify(deposits));
-
-loadUsers();
-loadDeposits();
-}
-
-/* DENY */
-function deny(i){
-
-let deposits = getDeposits();
-
-deposits.splice(i,1);
-
-localStorage.setItem("deposits", JSON.stringify(deposits));
-
-loadDeposits();
-}
-
-/* AUTO REFRESH (FIXES “NOT SHOWING” ISSUE) */
-setInterval(()=>{
-loadDeposits();
-loadUsers();
-},2000);
-
-/* INIT */
-loadUsers();
-loadDeposits();
-
-</script>
-
-</body>
-</html>
