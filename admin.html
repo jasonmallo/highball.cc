@@ -1,64 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Admin - CCMARKET</title>
+<meta charset="UTF-8">
+<title>Admin Panel</title>
 
 <style>
-body {
-    margin:0;
-    font-family:Arial;
-    background:#0b0b10;
-    color:white;
-    padding:20px;
+body{
+margin:0;
+font-family:Arial;
+background:#0b0b10;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
 }
 
-.box {
-    max-width:400px;
-    margin:auto;
-    background:#141420;
-    padding:20px;
-    border-radius:14px;
+.box{
+width:400px;
+background:#141420;
+padding:20px;
+border-radius:14px;
 }
 
-input, textarea {
-    width:100%;
-    padding:10px;
-    margin:8px 0;
-    background:#111;
-    border:1px solid #333;
-    color:white;
-    border-radius:10px;
+input,textarea{
+width:100%;
+padding:10px;
+margin:8px 0;
+border-radius:10px;
+border:1px solid #333;
+background:#111;
+color:white;
 }
 
-button {
-    background:#6a0dad;
-    color:white;
-    padding:10px;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
+button{
+width:100%;
+background:#6a0dad;
+color:white;
+padding:10px;
+border:none;
+border-radius:10px;
+cursor:pointer;
 }
 
-.hidden { display:none; }
+.hidden{display:none;}
 </style>
 </head>
 
 <body>
 
-<div class="box" id="loginBox">
-    <h2>Admin Login</h2>
-    <input id="pass" type="password" placeholder="Password">
-    <button onclick="login()">Login</button>
+<div class="box" id="login">
+<h2>Admin Login</h2>
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
 </div>
 
 <div class="box hidden" id="panel">
-    <h2>Admin Panel</h2>
+<h2>Create Listing</h2>
 
-    <input id="title" placeholder="Title">
-    <textarea id="desc" placeholder="Description"></textarea>
-    <input id="price" placeholder="Price">
+<input id="title" placeholder="Title">
+<textarea id="desc" placeholder="Description"></textarea>
+<input id="price" placeholder="Price">
+<input type="file" id="img">
 
-    <button onclick="add()">Post Listing</button>
+<button onclick="upload()">Post</button>
 </div>
 
 <script type="module">
@@ -70,39 +75,56 @@ collection,
 addDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+import {
+getStorage,
+ref,
+uploadBytes,
+getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
 const firebaseConfig = {
-  apiKey: "AIzaSyATUoBzhoyuzW4G71OB6fIwzBT1peZsFJA",
-  authDomain: "ccmarket-33f11.firebaseapp.com",
-  projectId: "ccmarket-33f11",
-  storageBucket: "ccmarket-33f11.firebasestorage.app",
-  messagingSenderId: "933329101447",
-  appId: "1:933329101447:web:4c8616745a5aba3baa4e22"
+apiKey: "AIzaSyATUoBzhoyuzW4G71OB6fIwzBT1peZsFJA",
+authDomain: "ccmarket-33f11.firebaseapp.com",
+projectId: "ccmarket-33f11",
+storageBucket: "ccmarket-33f11.firebasestorage.app",
+messagingSenderId: "933329101447",
+appId: "1:933329101447:web:4c8616745a5aba3baa4e22"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-/* SIMPLE PASSWORD */
+/* LOGIN */
 window.login = ()=>{
-    const pass = document.getElementById("pass").value;
-
-    if(pass === "admin123"){
-        loginBox.classList.add("hidden");
-        panel.classList.remove("hidden");
-    } else {
-        alert("Wrong password");
-    }
+if(pass.value==="admin123"){
+login.style.display="none";
+panel.classList.remove("hidden");
+}
+else alert("Wrong");
 };
 
-window.add = async ()=>{
-    await addDoc(collection(db,"listings"),{
-        title:title.value,
-        desc:desc.value,
-        price:price.value,
-        image:"https://via.placeholder.com/300"
-    });
+/* UPLOAD */
+window.upload = async ()=>{
 
-    alert("Posted!");
+const file = img.files[0];
+
+let url = "";
+
+if(file){
+const r = ref(storage,"img/"+Date.now()+file.name);
+await uploadBytes(r,file);
+url = await getDownloadURL(r);
+}
+
+await addDoc(collection(db,"listings"),{
+title:title.value,
+desc:desc.value,
+price:price.value,
+image:url || "https://via.placeholder.com/300"
+});
+
+alert("Posted!");
 };
 
 </script>
