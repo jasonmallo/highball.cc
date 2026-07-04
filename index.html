@@ -1,176 +1,276 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>CCMARKET Admin</title>
+<title>CCMARKET.FO</title>
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #0b0b10;
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+body{
+margin:0;
+font-family:Arial;
+background:#0b0b10;
+color:white;
 }
 
-/* CARD */
-.box {
-    width: 400px;
-    background: #141420;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 0 20px rgba(106,13,173,0.3);
+header{
+background:linear-gradient(90deg,#6a0dad,#a855f7);
+padding:16px;
+text-align:center;
+font-weight:bold;
 }
 
-/* INPUTS */
-input, textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 10px;
-    border: 1px solid #333;
-    background: #111;
-    color: white;
+.nav{
+display:flex;
+justify-content:center;
+gap:10px;
+padding:10px;
+background:#111;
 }
 
-/* BUTTON */
-button {
-    width: 100%;
-    background: #6a0dad;
-    color: white;
-    padding: 10px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-top: 8px;
+.nav button{
+background:#1b1b25;
+border:none;
+color:white;
+padding:10px;
+border-radius:10px;
+cursor:pointer;
 }
 
-button:hover {
-    background: #8b3dff;
+.page{
+display:none;
+padding:20px;
 }
 
-/* FILE UPLOAD */
-.file {
-    padding: 10px;
-    background: #111;
-    border: 1px solid #333;
-    border-radius: 10px;
-    margin-top: 8px;
-    width: 100%;
+.page.active{display:block;}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+gap:16px;
 }
 
-/* HIDDEN */
-.hidden {
-    display: none;
+.card{
+background:#151521;
+border-radius:14px;
+overflow:hidden;
+cursor:pointer;
+transition:0.2s;
 }
 
-/* TITLE */
-h2 {
-    text-align: center;
+.card:hover{transform:scale(1.03);}
+
+.card img{
+width:100%;
+height:160px;
+object-fit:cover;
+}
+
+.card-body{padding:12px;}
+
+.price{color:#a855f7;font-weight:bold;}
+
+/* MODAL */
+.modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.7);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+.modal.show{display:flex;}
+
+.box{
+background:#141420;
+padding:20px;
+border-radius:14px;
+width:320px;
+}
+
+/* LOGIN */
+.loginBox{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.7);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+.loginInner{
+background:#141420;
+padding:20px;
+border-radius:14px;
+width:300px;
+}
+
+input{
+width:100%;
+padding:10px;
+margin:8px 0;
+border-radius:10px;
+border:1px solid #333;
+background:#111;
+color:white;
+}
+
+button{
+background:#6a0dad;
+color:white;
+padding:10px;
+border:none;
+border-radius:10px;
+cursor:pointer;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div class="box" id="loginBox">
-    <h2>Admin Login</h2>
+<header>CCMARKET.FO</header>
 
-    <input id="password" type="password" placeholder="Enter password">
-    <button onclick="login()">Login</button>
+<div class="nav">
+<button onclick="tab('home')">Info</button>
+<button onclick="tab('shop')">Shop</button>
+<button onclick="openLogin()">Shop Login</button>
 </div>
 
-<!-- ADMIN PANEL -->
-<div class="box hidden" id="adminPanel">
-    <h2>Upload Listing</h2>
+<!-- INFO -->
+<div id="home" class="page active">
+<h2>Marketplace Info</h2>
+<p>Digital marketplace powered by Firebase.</p>
+</div>
 
-    <input id="title" placeholder="Title">
-    <textarea id="desc" placeholder="Description"></textarea>
-    <input id="price" placeholder="Price">
+<!-- SHOP -->
+<div id="shop" class="page">
+<div class="grid" id="grid"></div>
+</div>
 
-    <!-- IMAGE UPLOAD AREA -->
-    <input type="file" id="image" class="file" accept="image/*">
+<!-- MODAL -->
+<div class="modal" id="modal">
+<div class="box">
+<h3 id="t"></h3>
+<p id="d"></p>
+<p id="p"></p>
+<button onclick="closeModal()">Close</button>
+</div>
+</div>
 
-    <button onclick="upload()">Post Listing</button>
+<!-- LOGIN -->
+<div class="loginBox" id="loginBox">
+<div class="loginInner">
+<h3>Shop Login</h3>
+<input id="email" placeholder="Email">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<button onclick="closeLogin()">Close</button>
+<p id="status"></p>
+</div>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { 
-    getFirestore, 
-    collection, 
-    addDoc 
+import {
+getFirestore,
+collection,
+getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-import { 
-    getStorage, 
-    ref, 
-    uploadBytes, 
-    getDownloadURL 
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import {
+getAuth,
+signInWithEmailAndPassword,
+onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-/* 🔥 YOUR FIREBASE */
+/* FIREBASE */
 const firebaseConfig = {
-  apiKey: "AIzaSyATUoBzhoyuzW4G71OB6fIwzBT1peZsFJA",
-  authDomain: "ccmarket-33f11.firebaseapp.com",
-  projectId: "ccmarket-33f11",
-  storageBucket: "ccmarket-33f11.firebasestorage.app",
-  messagingSenderId: "933329101447",
-  appId: "1:933329101447:web:4c8616745a5aba3baa4e22"
+apiKey: "AIzaSyATUoBzhoyuzW4G71OB6fIwzBT1peZsFJA",
+authDomain: "ccmarket-33f11.firebaseapp.com",
+projectId: "ccmarket-33f11",
+storageBucket: "ccmarket-33f11.firebasestorage.app",
+messagingSenderId: "933329101447",
+appId: "1:933329101447:web:4c8616745a5aba3baa4e22"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
+const auth = getAuth(app);
 
-/* 🔐 LOGIN */
-window.login = ()=>{
-    const pass = document.getElementById("password").value;
+let user = null;
 
-    if(pass === "admin123"){
-        document.getElementById("loginBox").classList.add("hidden");
-        document.getElementById("adminPanel").classList.remove("hidden");
-    } else {
-        alert("Wrong password");
-    }
+/* NAV */
+window.tab = (id)=>{
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.getElementById(id).classList.add("active");
 };
 
-/* 📦 UPLOAD LISTING */
-window.upload = async ()=>{
-
-    const title = document.getElementById("title").value;
-    const desc = document.getElementById("desc").value;
-    const price = document.getElementById("price").value;
-    const file = document.getElementById("image").files[0];
-
-    if(!title || !price) return alert("Fill required fields");
-
-    let imageUrl = "";
-
-    // If image exists → upload to Firebase Storage
-    if(file){
-
-        const imageRef = ref(storage, "images/" + Date.now() + file.name);
-
-        await uploadBytes(imageRef, file);
-
-        imageUrl = await getDownloadURL(imageRef);
-    }
-
-    await addDoc(collection(db,"listings"),{
-        title,
-        desc,
-        price,
-        image: imageUrl || "https://via.placeholder.com/300"
-    });
-
-    alert("Listing posted!");
+/* LOGIN UI */
+window.openLogin = ()=>{
+document.getElementById("loginBox").style.display="flex";
 };
+
+window.closeLogin = ()=>{
+document.getElementById("loginBox").style.display="none";
+};
+
+window.login = async ()=>{
+const email = email.value;
+const pass = pass.value;
+
+try{
+await signInWithEmailAndPassword(auth,email,pass);
+status.innerText="Logged in";
+closeLogin();
+}catch(e){
+status.innerText="Failed";
+}
+};
+
+onAuthStateChanged(auth,(u)=>{
+user = u;
+load();
+});
+
+/* LOAD SHOP */
+async function load(){
+const grid = document.getElementById("grid");
+grid.innerHTML="";
+
+const snap = await getDocs(collection(db,"listings"));
+
+snap.forEach(d=>{
+const i = d.data();
+
+const div = document.createElement("div");
+div.className="card";
+
+div.innerHTML=`
+<img src="${i.image}">
+<div class="card-body">
+<h3>${i.title}</h3>
+<p>${i.desc}</p>
+<p class="price">${i.price}</p>
+</div>
+`;
+
+div.onclick=()=>{
+modal.classList.add("show");
+t.innerText=i.title;
+d.innerText=i.desc;
+p.innerText=i.price;
+};
+
+grid.appendChild(div);
+});
+}
+
+window.closeModal=()=>{
+modal.classList.remove("show");
+};
+
+load();
 
 </script>
 
