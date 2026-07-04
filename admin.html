@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Panel</title>
+
+<style>
+body{
+margin:0;
+font-family:system-ui;
+background:#0a0214;
+color:white;
+}
+
+header{
+padding:14px;
+background:#1b0730;
+font-weight:700;
+}
+
+section{
+padding:20px;
+}
+
+.box{
+background:#140a25;
+padding:12px;
+margin:10px 0;
+border-radius:12px;
+}
+
+button{
+border:0;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+font-weight:700;
+margin-right:5px;
+}
+
+.accept{background:#22c55e;color:white}
+.deny{background:#ef4444;color:white}
+</style>
+</head>
+
+<body>
+
+<header>ADMIN PANEL</header>
+
+<!-- USERS -->
+<section>
+<h2>Users</h2>
+<div id="users"></div>
+</section>
+
+<!-- DEPOSITS -->
+<section>
+<h2>Deposits</h2>
+<div id="deps"></div>
+</section>
+
+<script>
+
+/* STORAGE */
+function getDB(){
+return JSON.parse(localStorage.getItem("db") || "{}");
+}
+
+function getDeposits(){
+return JSON.parse(localStorage.getItem("deposits") || "[]");
+}
+
+/* USERS */
+function loadUsers(){
+let db = getDB();
+let box = document.getElementById("users");
+box.innerHTML = "";
+
+for(let u in db){
+box.innerHTML += `
+<div class="box">
+<b>${u}</b><br>
+Email: ${db[u].email || "N/A"}<br>
+Balance: $${db[u].balance || 0}
+</div>`;
+}
+}
+
+/* DEPOSITS */
+function loadDeposits(){
+
+let deposits = getDeposits();
+let box = document.getElementById("deps");
+box.innerHTML = "";
+
+if(deposits.length === 0){
+box.innerHTML = "<p>No deposits yet</p>";
+return;
+}
+
+deposits.forEach((d,i)=>{
+box.innerHTML += `
+<div class="box">
+User: ${d.user}<br>
+Amount: $${d.amount}<br>
+Method: ${d.method}<br>
+Info: ${d.info}<br>
+${d.note ? "<b>"+d.note+"</b><br>" : ""}
+Status: ${d.status}<br><br>
+
+<button class="accept" onclick="approve(${i})">Accept</button>
+<button class="deny" onclick="deny(${i})">Deny</button>
+</div>`;
+});
+}
+
+/* ACCEPT */
+function approve(i){
+
+let db = getDB();
+let deposits = getDeposits();
+
+let d = deposits[i];
+
+if(!db[d.user]){
+db[d.user] = {balance:0};
+}
+
+db[d.user].balance += Number(d.amount);
+
+/* remove deposit */
+deposits.splice(i,1);
+
+localStorage.setItem("db", JSON.stringify(db));
+localStorage.setItem("deposits", JSON.stringify(deposits));
+
+loadUsers();
+loadDeposits();
+}
+
+/* DENY */
+function deny(i){
+
+let deposits = getDeposits();
+
+deposits.splice(i,1);
+
+localStorage.setItem("deposits", JSON.stringify(deposits));
+
+loadDeposits();
+}
+
+/* AUTO REFRESH (FIXES “NOT SHOWING” ISSUE) */
+setInterval(()=>{
+loadDeposits();
+loadUsers();
+},2000);
+
+/* INIT */
+loadUsers();
+loadDeposits();
+
+</script>
+
+</body>
+</html>

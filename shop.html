@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ccmarket - Shop</title>
+
+<style>
+body{
+margin:0;
+font-family:system-ui;
+background:#0a0214;
+color:white;
+}
+
+header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:14px;
+background:#1b0730;
+position:sticky;
+top:0;
+}
+
+nav button{
+background:none;
+border:0;
+color:#ccc;
+margin:0 6px;
+cursor:pointer;
+font-weight:700;
+}
+
+section{
+display:none;
+padding:20px;
+}
+
+section.active{
+display:block;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+gap:15px;
+margin-top:10px;
+}
+
+.card{
+background:#140a25;
+padding:12px;
+border-radius:12px;
+}
+
+img{
+width:100%;
+height:140px;
+object-fit:cover;
+border-radius:10px;
+background:#222;
+}
+
+input{
+width:100%;
+padding:10px;
+margin-top:8px;
+border-radius:10px;
+background:#140a25;
+border:1px solid #333;
+color:white;
+}
+
+button.action{
+width:100%;
+padding:10px;
+margin-top:8px;
+border:0;
+border-radius:10px;
+background:#8b5cf6;
+color:white;
+font-weight:700;
+cursor:pointer;
+}
+
+#status{
+margin-top:10px;
+white-space:pre-line;
+}
+
+small{
+opacity:0.7;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div>ccmarket</div>
+
+<nav>
+<button onclick="show('shop')">Shop</button>
+<button onclick="show('deposit')">Deposit</button>
+</nav>
+
+<div id="userBox"></div>
+</header>
+
+<!-- SHOP -->
+<section id="shop" class="active">
+<h2>Shop</h2>
+<div id="items" class="grid"></div>
+</section>
+
+<!-- DEPOSIT -->
+<section id="deposit">
+<h2>Deposit</h2>
+
+<p>Balance: $<span id="bal">0</span></p>
+
+<input id="amount" placeholder="Enter amount ($10 min)">
+<button class="action" onclick="deposit()">Request Deposit</button>
+
+<div id="status"></div>
+
+<small>
+Supported: Bitcoin / Litecoin / Cash App
+</small>
+</section>
+
+<script>
+
+/* SAFE LOGIN (prevents blank screen) */
+let user = localStorage.getItem("currentUser");
+if(!user){
+user = "guest";
+localStorage.setItem("currentUser","guest");
+}
+
+/* SAFE STORAGE */
+let db = JSON.parse(localStorage.getItem("db") || "{}");
+let items = JSON.parse(localStorage.getItem("items") || "[]");
+let deposits = JSON.parse(localStorage.getItem("deposits") || "[]");
+
+/* AUTO CREATE USER */
+if(!db[user]){
+db[user] = {balance:0};
+localStorage.setItem("db",JSON.stringify(db));
+}
+
+document.getElementById("userBox").innerText = user;
+
+/* NAV */
+function show(id){
+document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+updateBalance();
+}
+
+/* SHOP RENDER (100% SAFE) */
+function render(){
+let box = document.getElementById("items");
+box.innerHTML = "";
+
+if(!items || items.length === 0){
+box.innerHTML = "<p style='opacity:0.6'>No items available yet</p>";
+return;
+}
+
+items.forEach(x=>{
+box.innerHTML += `
+<div class="card">
+<img src="${x.image || 'https://via.placeholder.com/300x140'}">
+<h3>${x.name}</h3>
+<p>$${x.price}</p>
+</div>`;
+});
+}
+
+/* BALANCE */
+function updateBalance(){
+document.getElementById("bal").innerText =
+db[user].balance || 0;
+}
+
+/* DEPOSIT SYSTEM */
+function deposit(){
+
+let amt = parseFloat(document.getElementById("amount").value);
+
+if(!amt || amt < 10){
+alert("Minimum deposit is $10");
+return;
+}
+
+let method = prompt("Type: Bitcoin / Litecoin / CashApp / Cash App");
+if(!method) return;
+
+method = method.toLowerCase().replace(/\s/g,"");
+
+let label = "";
+let info = "";
+let note = "";
+
+/* PAYMENT METHODS */
+if(method === "bitcoin"){
+label = "Bitcoin";
+info = "bc1qlr8yjcx20es0ej606w65pfhr5vpw5t2n0920pa";
+}
+
+else if(method === "litecoin" || method === "litcoin"){
+label = "Litecoin";
+info = "LNU23WGCubW9tkw4Dvxk2PkqBqz8gWE9bC";
+}
+
+else if(method === "cashapp" || method === "cash"){
+label = "Cash App";
+info = "$voiders";
+
+/* CASHAPP SPECIAL NOTE */
+note = "NOTE: when ur depositing with CASHAPP put the note as FOOD or WORK. If it doesnt work contact support on Discord: 22yxduper";
+}
+
+else{
+alert("Invalid method");
+return;
+}
+
+/* SAVE DEPOSIT */
+deposits.push({
+user,
+amount: amt,
+method: label,
+info,
+note,
+status:"pending"
+});
+
+localStorage.setItem("deposits",JSON.stringify(deposits));
+
+/* SHOW INFO */
+document.getElementById("status").innerText =
+"Deposit Created\n\n" +
+"Method: " + label + "\n" +
+"Amount: $" + amt + "\n\n" +
+"Send to:\n" + info + "\n\n" +
+(note ? note + "\n\n" : "") +
+"Status: Pending admin approval";
+}
+
+/* INIT */
+render();
+updateBalance();
+
+</script>
+
+</body>
+</html>
