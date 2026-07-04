@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ccmarket - Shop</title>
+<title>Shop</title>
 
 <style>
 body{
@@ -28,6 +28,22 @@ background:none;
 border:0;
 color:#ccc;
 margin:0 6px;
+cursor:pointer;
+font-weight:700;
+}
+
+.right{
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.loginBtn{
+background:#8b5cf6;
+color:white;
+border:0;
+padding:6px 10px;
+border-radius:8px;
 cursor:pointer;
 font-weight:700;
 }
@@ -88,10 +104,6 @@ cursor:pointer;
 margin-top:10px;
 white-space:pre-line;
 }
-
-small{
-opacity:0.7;
-}
 </style>
 </head>
 
@@ -105,7 +117,13 @@ opacity:0.7;
 <button onclick="show('deposit')">Deposit</button>
 </nav>
 
+<div class="right">
 <div id="userBox"></div>
+
+<button id="loginBtn" class="loginBtn" onclick="goLogin()">
+Login
+</button>
+</div>
 </header>
 
 <!-- SHOP -->
@@ -124,33 +142,39 @@ opacity:0.7;
 <button class="action" onclick="deposit()">Request Deposit</button>
 
 <div id="status"></div>
-
-<small>
-Supported: Bitcoin / Litecoin / Cash App
-</small>
 </section>
 
 <script>
 
-/* SAFE LOGIN (prevents blank screen) */
+/* LOGIN CHECK */
 let user = localStorage.getItem("currentUser");
-if(!user){
-user = "guest";
-localStorage.setItem("currentUser","guest");
-}
 
-/* SAFE STORAGE */
+/* ITEMS + DATA */
 let db = JSON.parse(localStorage.getItem("db") || "{}");
 let items = JSON.parse(localStorage.getItem("items") || "[]");
 let deposits = JSON.parse(localStorage.getItem("deposits") || "[]");
 
-/* AUTO CREATE USER */
-if(!db[user]){
-db[user] = {balance:0};
-localStorage.setItem("db",JSON.stringify(db));
+/* LOGIN UI */
+function updateLoginUI(){
+if(user){
+document.getElementById("userBox").innerText = user;
+
+document.getElementById("loginBtn").innerText = "Logout";
+document.getElementById("loginBtn").onclick = logout;
+}
+else{
+document.getElementById("userBox").innerText = "Guest";
+}
 }
 
-document.getElementById("userBox").innerText = user;
+function goLogin(){
+window.location.href = "auth.html";
+}
+
+function logout(){
+localStorage.removeItem("currentUser");
+location.reload();
+}
 
 /* NAV */
 function show(id){
@@ -159,12 +183,12 @@ document.getElementById(id).classList.add("active");
 updateBalance();
 }
 
-/* SHOP RENDER (100% SAFE) */
+/* SHOP */
 function render(){
 let box = document.getElementById("items");
 box.innerHTML = "";
 
-if(!items || items.length === 0){
+if(items.length === 0){
 box.innerHTML = "<p style='opacity:0.6'>No items available yet</p>";
 return;
 }
@@ -181,12 +205,18 @@ box.innerHTML += `
 
 /* BALANCE */
 function updateBalance(){
-document.getElementById("bal").innerText =
-db[user].balance || 0;
+if(user && db[user]){
+document.getElementById("bal").innerText = db[user].balance || 0;
+}
 }
 
-/* DEPOSIT SYSTEM */
+/* DEPOSIT */
 function deposit(){
+
+if(!user){
+alert("Please login first");
+return;
+}
 
 let amt = parseFloat(document.getElementById("amount").value);
 
@@ -195,7 +225,7 @@ alert("Minimum deposit is $10");
 return;
 }
 
-let method = prompt("Type: Bitcoin / Litecoin / CashApp / Cash App");
+let method = prompt("Bitcoin / Litecoin / CashApp / Cash App");
 if(!method) return;
 
 method = method.toLowerCase().replace(/\s/g,"");
@@ -204,25 +234,22 @@ let label = "";
 let info = "";
 let note = "";
 
-/* PAYMENT METHODS */
+/* METHODS */
 if(method === "bitcoin"){
 label = "Bitcoin";
 info = "bc1qlr8yjcx20es0ej606w65pfhr5vpw5t2n0920pa";
 }
-
 else if(method === "litecoin" || method === "litcoin"){
 label = "Litecoin";
 info = "LNU23WGCubW9tkw4Dvxk2PkqBqz8gWE9bC";
 }
-
 else if(method === "cashapp" || method === "cash"){
 label = "Cash App";
 info = "$voiders";
 
-/* CASHAPP SPECIAL NOTE */
-note = "NOTE: when ur depositing with CASHAPP put the note as FOOD or WORK. If it doesnt work contact support on Discord: 22yxduper";
+/* CASHAPP NOTE */
+note = "NOTE: when using CASHAPP put 'food' or 'work' in the note. If it fails contact Discord: 22yxduper";
 }
-
 else{
 alert("Invalid method");
 return;
@@ -231,8 +258,8 @@ return;
 /* SAVE DEPOSIT */
 deposits.push({
 user,
-amount: amt,
-method: label,
+amount:amt,
+method:label,
 info,
 note,
 status:"pending"
@@ -240,7 +267,6 @@ status:"pending"
 
 localStorage.setItem("deposits",JSON.stringify(deposits));
 
-/* SHOW INFO */
 document.getElementById("status").innerText =
 "Deposit Created\n\n" +
 "Method: " + label + "\n" +
@@ -252,6 +278,7 @@ document.getElementById("status").innerText =
 
 /* INIT */
 render();
+updateLoginUI();
 updateBalance();
 
 </script>
